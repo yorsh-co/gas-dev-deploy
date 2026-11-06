@@ -45,6 +45,12 @@ describe('updateEnv', () => {
     );
   });
 
+  it('keeps keys named like Object.prototype members', () => {
+    const path = envPath('constructor=x\ntoString=y\n');
+    updateEnv(path, { A: '1' });
+    expect(readFileSync(path, 'utf8')).toBe('constructor=x\ntoString=y\nA=1\n');
+  });
+
   it('round-trips quoted values', () => {
     const path = envPath();
     const values = {

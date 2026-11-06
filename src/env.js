@@ -93,7 +93,11 @@ export function updateEnv(path, values) {
   });
   const updated = lines.map((line, index) => {
     const key = keyOf(line);
-    if (key !== undefined && key in values && lastIndex.get(key) === index) {
+    if (
+      key !== undefined &&
+      Object.hasOwn(values, key) &&
+      lastIndex.get(key) === index
+    ) {
       if (opensMultilineValue(line)) {
         throw new DeployError(
           `.env value for ${key} spans several lines; edit it by hand.`,
