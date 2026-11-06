@@ -21,6 +21,7 @@
 
 ## Requirements
 
+- Linux or macOS (Windows is not supported: clasp is spawned without a shell, so `clasp.cmd` cannot be resolved)
 - Node.js `^22.13.0`, `^24.0.0` or `>=26.0.0`
 - [clasp](https://github.com/google/clasp) 3.4+ on `PATH` and logged in (`clasp login`)
 - The Apps Script API enabled at https://script.google.com/home/usersettings
