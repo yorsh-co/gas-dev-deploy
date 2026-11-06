@@ -5,7 +5,7 @@ import { readEnv, updateEnv } from './env.js';
 
 /**
  * @typedef {import('./steps/login.js').StepContext} StepContext
- * @typedef {{ title: string, run: (ctx: PublicContext) => Promise<void> }} CustomStep
+ * @typedef {{ title: string, run: (ctx: PublicContext) => void | Promise<void> }} CustomStep
  * @typedef {object} PublicContext
  * @property {string} cwd
  * @property {Record<string, unknown>} pkg

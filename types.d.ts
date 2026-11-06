@@ -48,5 +48,5 @@ export interface DeployContext {
 /** A project-defined step, run after the deployment and before the summary. */
 export interface DeployStep {
   title: string;
-  run(ctx: DeployContext): Promise<void>;
+  run(ctx: DeployContext): void | Promise<void>;
 }
