@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createClasp } from '../src/clasp.js';
 import { loadConfig } from '../src/config.js';
 import { readEnv } from '../src/env.js';
-import { DeployError } from '../src/errors.js';
+import { CancelledError, DeployError } from '../src/errors.js';
 import { configure } from '../src/steps/configure.js';
 import { deployment } from '../src/steps/deployment.js';
 import { login } from '../src/steps/login.js';
@@ -194,6 +194,18 @@ describe('configure', () => {
         scriptId: 's-2',
       },
     );
+  });
+
+  it('leaves .clasp.json unchanged when the time-zone prompt is cancelled', async () => {
+    const original = '{"scriptId":"old"}';
+    const root = createProject({ files: { '.clasp.json': original } });
+    const ctx = context(root);
+    ctx.state.scriptId = 's-3';
+    ctx.io.prompt = async () => {
+      throw new CancelledError();
+    };
+    await expect(configure(ctx)).rejects.toThrow(CancelledError);
+    expect(readFileSync(join(root, '.clasp.json'), 'utf8')).toBe(original);
   });
 
   it('defaults the time zone to the template, then the manifest, then Intl', async () => {

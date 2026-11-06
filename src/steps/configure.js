@@ -52,8 +52,6 @@ export async function configure({ config, io, state }) {
     throw new DeployError('No Apps Script project selected.');
   }
   const { paths } = config;
-  writeJson(paths.clasp, { ...config.claspTemplate, scriptId });
-
   const existing = readManifest(paths.manifest);
   const defaultZone = [
     config.manifestTemplate.timeZone,
@@ -68,6 +66,7 @@ export async function configure({ config, io, state }) {
     validate: (/** @type {string} */ value) =>
       value.trim() !== '' || 'Enter a time zone.',
   });
+  writeJson(paths.clasp, { ...config.claspTemplate, scriptId });
   mkdirSync(dirname(paths.manifest), { recursive: true });
   writeJson(paths.manifest, {
     ...existing,
