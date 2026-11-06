@@ -44,6 +44,14 @@ describe('loadSteps', () => {
     );
   });
 
+  it.each([
+    ['missing-title.js', 'Step 0: title must be a non-empty string.'],
+    ['blank-title.js', 'Step 0: title must be a non-empty string.'],
+    ['null-entry.js', 'Step 0 must be an object.'],
+  ])('rejects invalid entry %s', async (file, message) => {
+    await expect(loadSteps(fixture(file))).rejects.toThrow(message);
+  });
+
   it('rejects a default export that is not an array', async () => {
     await expect(loadSteps(fixture('not-array.js'))).rejects.toThrow(
       'default-export an array',
