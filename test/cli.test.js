@@ -1,9 +1,10 @@
 // @ts-check
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
 
-const BIN = new URL('../bin/gas-dev-deploy.js', import.meta.url).pathname;
+const BIN = fileURLToPath(new URL('../bin/gas-dev-deploy.js', import.meta.url));
 
 /** @param {string[]} args */
 function run(args) {
