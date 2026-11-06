@@ -73,8 +73,99 @@ Options live in `package.json` under `gasDevDeploy`:
 | Key     | Type   | Default                 | Description                        |
 | ------- | ------ | ----------------------- | ---------------------------------- |
 | `title` | string | `package.json` `"name"` | Title of a new Apps Script project |
+| `steps` | string | none                    | Module with project-defined steps  |
 
 Unknown keys are rejected.
+
+## Custom steps
+
+Set `gasDevDeploy.steps` to a project-relative path to an ES module (`.js` or `.mjs`, no `..` segments). Its default export is an array of steps, run in order after the deployment and before the summary:
+
+```json
+{ "gasDevDeploy": { "steps": "scripts/deploy-steps.js" } }
+```
+
+The module is loaded before login, so a broken module fails before anything touches Apps Script. Each step is `{ title, run(ctx) }`, where `title` is a non-empty string and `run` is a function that may be async. Throw `DeployError` (exported by `gas-dev-deploy`) to fail cleanly; any other error is reported as `Step "<title>" failed: <message>`.
+
+`ctx` has:
+
+| Property             | Description                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `cwd`                | Project root                                                                       |
+| `pkg`                | Parsed `package.json`                                                              |
+| `deployment`         | `{ scriptId, webappUrl, deploymentId, version }`                                   |
+| `env.read()`         | Parsed `.env`, empty when the file does not exist                                  |
+| `env.update(values)` | Sets keys in `.env` in place, keeping comments; values must not contain newlines   |
+| `prompt(questions)`  | [`prompts`](https://github.com/terkelg/prompts) questions; resolves to the answers |
+| `log`                | `info`, `success`, `warn`, `error`, `raw` and `section`                            |
+| `openScript()`       | Opens the script in the Apps Script editor                                         |
+
+Types ship with the package. Steps run with your user privileges, so only point `steps` at code you trust. See [ADR 0002](docs/adr/0002-project-defined-steps.md).
+
+### Example: Calendly OAuth credentials
+
+A step that asks for a Calendly OAuth client ID and secret, stores them in `.env`, prints the Script Property to save and opens the editor:
+
+```js
+// scripts/deploy-steps.js
+import { DeployError } from 'gas-dev-deploy';
+
+/** @type {import('gas-dev-deploy').DeployStep[]} */
+export default [
+  {
+    title: 'Calendly OAuth setup',
+    async run(ctx) {
+      const stored = ctx.env.read();
+      let clientId = stored.CALENDLY_CLIENT_ID;
+      let clientSecret = stored.CALENDLY_CLIENT_SECRET;
+
+      let provide = true;
+      if (clientId && clientSecret) {
+        ctx.log.warn('Existing Calendly OAuth credentials detected');
+        ({ provide } = await ctx.prompt({
+          type: 'confirm',
+          name: 'provide',
+          message: 'Provide new credentials?',
+          initial: true,
+        }));
+      }
+
+      if (provide) {
+        ({ clientId, clientSecret } = await ctx.prompt([
+          { type: 'text', name: 'clientId', message: 'OAuth Client ID' },
+          {
+            type: 'password',
+            name: 'clientSecret',
+            message: 'OAuth Client Secret',
+          },
+        ]));
+        if (!clientId || !clientSecret) {
+          throw new DeployError('Client ID and secret are required');
+        }
+        ctx.env.update({
+          CALENDLY_CLIENT_ID: clientId,
+          CALENDLY_CLIENT_SECRET: clientSecret,
+        });
+      }
+
+      const credentials = {
+        clientId,
+        clientSecret,
+        redirectUri: ctx.deployment.webappUrl,
+      };
+      ctx.log.info('Save this JSON as a Script Property:');
+      ctx.log.raw(JSON.stringify(credentials, null, 2));
+
+      ctx.openScript();
+      await ctx.prompt({
+        type: 'text',
+        name: 'done',
+        message: 'After saving the Script Property, press ENTER to continue',
+      });
+    },
+  },
+];
+```
 
 ## Files written
 
