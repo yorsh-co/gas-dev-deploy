@@ -23,13 +23,13 @@
 
 - Linux or macOS (Windows is not supported: clasp is spawned without a shell, so `clasp.cmd` cannot be resolved)
 - Node.js `^22.13.0`, `^24.0.0` or `>=26.0.0`
-- [clasp](https://github.com/google/clasp) 3.4+ on `PATH` and logged in (`clasp login`)
+- [clasp](https://github.com/google/clasp) 3.4+ on `PATH` (the wizard runs `clasp login` when needed)
 - The Apps Script API enabled at https://script.google.com/home/usersettings
 
 ## Install
 
 ```sh
-npm install -D "gas-dev-deploy@github:yorsh-co/gas-dev-deploy#semver:^0.1.0"
+npm install -D github:yorsh-co/gas-dev-deploy#semver:^0.1.0
 ```
 
 Add a script to `package.json`:
@@ -85,7 +85,7 @@ Set `gasDevDeploy.steps` to a project-relative path to an ES module (`.js` or `.
 { "gasDevDeploy": { "steps": "scripts/deploy-steps.js" } }
 ```
 
-The module is loaded before login, so a broken module fails before anything touches Apps Script. Each step is `{ title, run(ctx) }`, where `title` is a non-empty string and `run` is a function that may be async. Throw `DeployError` (exported by `gas-dev-deploy`) to fail cleanly; any other error is reported as `Step "<title>" failed: <message>`.
+The module is loaded before login, so a broken module fails before anything touches Apps Script. Each step is `{ title, run(ctx) }`, where `title` is a non-empty string and `run` is a function that may be async. Throw `DeployError` (exported by `gas-dev-deploy`) to fail cleanly; any other error is reported as `Step "<title>" failed: <message>`. An error thrown from a prompt question's `validate`, `format` or `onSubmit` callback is reported by `prompts` as a cancel (`Cancelled.`, exit 130), so validate inputs in `run` when the message matters.
 
 `ctx` has:
 
