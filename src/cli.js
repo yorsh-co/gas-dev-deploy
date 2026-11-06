@@ -3,7 +3,7 @@ import { parseArgs } from 'node:util';
 import pkg from '../package.json' with { type: 'json' };
 import { deploy } from './deploy.js';
 import { createIo } from './io.js';
-import { CancelledError, DeployError } from './errors.js';
+import { CancelledError, isDeployError } from './errors.js';
 
 const OPTIONS = /** @type {const} */ ({
   help: { type: 'boolean', short: 'h' },
@@ -63,7 +63,7 @@ export async function main(argv) {
       process.stderr.write('Cancelled.\n');
       return 130;
     }
-    if (error instanceof DeployError) {
+    if (isDeployError(error)) {
       process.stderr.write(`gas-dev-deploy: ${error.message}\n`);
       return 1;
     }
