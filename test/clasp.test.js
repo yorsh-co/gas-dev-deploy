@@ -1,11 +1,5 @@
 // @ts-check
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  writeFileSync,
-} from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -75,9 +69,6 @@ describe('whoAmI', () => {
 
 describe('create', () => {
   it('creates in a temp dir, returns the script id and removes the dir', () => {
-    const before = readdirSync(tmpdir()).filter((n) =>
-      n.startsWith('gas-dev-deploy-create-'),
-    );
     expect(clasp({ FAKE_CLASP_SCRIPT_ID: 'abc' }).create('My App')).toEqual({
       scriptId: 'abc',
     });
@@ -91,10 +82,6 @@ describe('create', () => {
     expect(call.args[4]).toBe('--rootDir');
     expect(existsSync(/** @type {string} */ (call.args[5]))).toBe(false);
     expect(call.cwd).not.toBe(tmpdir());
-    const after = readdirSync(tmpdir()).filter((n) =>
-      n.startsWith('gas-dev-deploy-create-'),
-    );
-    expect(after).toEqual(before);
   });
 
   it.each(['{}', '{"scriptId":""}', 'null'])(

@@ -1,9 +1,9 @@
 // @ts-check
-import { readFileSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { isAbsolute, join, resolve } from 'node:path';
 import { DeployError } from './errors.js';
 
-const KNOWN_KEYS = ['title'];
+const KNOWN_KEYS = ['title', 'steps'];
 
 /**
  * @typedef {object} DeployConfig
@@ -11,6 +11,7 @@ const KNOWN_KEYS = ['title'];
  * @property {string} title Apps Script project title.
  * @property {Record<string, unknown>} claspTemplate Parsed `.clasp.example.json`.
  * @property {Record<string, unknown>} manifestTemplate Parsed `appsscript.example.json`.
+ * @property {string | undefined} stepsPath Absolute path of the project-defined steps module.
  * @property {string} rootDir Manifest directory, relative to the project (default `.`).
  * @property {{ env: string, clasp: string, manifest: string, claspTemplate: string, manifestTemplate: string }} paths
  */
@@ -69,12 +70,13 @@ function errorMessage(error) {
  * Validates the `gasDevDeploy` package.json key.
  *
  * @param {unknown} options
- * @returns {{ title: string | undefined }}
+ * @param {string} cwd Project root, used to resolve and check `steps`.
+ * @returns {{ title: string | undefined, stepsPath: string | undefined }}
  * @throws {DeployError} Naming the offending key.
  */
-function validateOptions(options) {
+function validateOptions(options, cwd) {
   if (options === undefined) {
-    return { title: undefined };
+    return { title: undefined, stepsPath: undefined };
   }
   if (!isObject(options)) {
     throw new DeployError('gasDevDeploy must be an object.');
@@ -90,7 +92,45 @@ function validateOptions(options) {
   ) {
     throw new DeployError('gasDevDeploy.title must be a non-empty string.');
   }
-  return { title };
+  return { title, stepsPath: validateSteps(options.steps, cwd) };
+}
+
+/**
+ * Validates `gasDevDeploy.steps`: a relative `.js`/`.mjs` file inside the project.
+ *
+ * @param {unknown} value
+ * @param {string} cwd
+ * @returns {string | undefined} The absolute path.
+ * @throws {DeployError} If the value is invalid or the file does not exist.
+ */
+function validateSteps(value, cwd) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new DeployError('gasDevDeploy.steps must be a non-empty string.');
+  }
+  if (isAbsolute(value) || value.split(/[\\/]/).includes('..')) {
+    throw new DeployError(
+      `gasDevDeploy.steps "${value}" must be a relative path inside the project.`,
+    );
+  }
+  if (!/\.m?js$/.test(value)) {
+    throw new DeployError(
+      `gasDevDeploy.steps "${value}" must end in .js or .mjs.`,
+    );
+  }
+  const path = resolve(cwd, value);
+  let isFile = false;
+  try {
+    isFile = statSync(path).isFile();
+  } catch {
+    // Reported below.
+  }
+  if (!isFile) {
+    throw new DeployError(`gasDevDeploy.steps file "${value}" not found.`);
+  }
+  return path;
 }
 
 /**
@@ -129,7 +169,7 @@ export function loadConfig(cwd) {
   if (typeof pkg.name !== 'string' || pkg.name === '') {
     throw new DeployError('package.json has no "name".');
   }
-  const { title } = validateOptions(pkg.gasDevDeploy);
+  const { title, stepsPath } = validateOptions(pkg.gasDevDeploy, cwd);
 
   const paths = {
     env: join(cwd, '.env'),
@@ -154,6 +194,7 @@ export function loadConfig(cwd) {
     title: title ?? pkg.name,
     claspTemplate,
     manifestTemplate,
+    stepsPath,
     rootDir,
     paths,
   };

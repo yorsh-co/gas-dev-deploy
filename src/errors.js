@@ -16,3 +16,16 @@ export class CancelledError extends Error {
     this.name = 'CancelledError';
   }
 }
+
+/**
+ * Recognises a DeployError even when it comes from another installed copy of this package.
+ *
+ * @param {unknown} error
+ * @returns {error is Error}
+ */
+export function isDeployError(error) {
+  return (
+    error instanceof DeployError ||
+    (error instanceof Error && error.name === 'DeployError')
+  );
+}

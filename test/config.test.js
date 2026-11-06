@@ -57,6 +57,26 @@ describe('loadConfig', () => {
     expect(() => loadConfig(root)).toThrow(message);
   });
 
+  it('resolves the steps module to an absolute path', () => {
+    const root = createProject({
+      pkg: { gasDevDeploy: { steps: 'deploy/steps.mjs' } },
+      files: { 'deploy/steps.mjs': 'export default [];\n' },
+    });
+    expect(loadConfig(root).stepsPath).toBe(join(root, 'deploy/steps.mjs'));
+  });
+
+  it.each([
+    [5, 'must be a non-empty string'],
+    ['', 'must be a non-empty string'],
+    ['/abs/steps.js', 'relative path inside the project'],
+    ['../steps.js', 'relative path inside the project'],
+    ['steps.ts', 'must end in .js or .mjs'],
+    ['missing.js', 'not found'],
+  ])('rejects invalid steps %j', (steps, message) => {
+    const root = createProject({ pkg: { gasDevDeploy: { steps } } });
+    expect(() => loadConfig(root)).toThrow(message);
+  });
+
   it('requires a package name', () => {
     const root = createProject({ pkg: { name: undefined } });
     expect(() => loadConfig(root)).toThrow(DeployError);

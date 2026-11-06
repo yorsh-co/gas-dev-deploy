@@ -2,6 +2,7 @@
 import pkg from '../package.json' with { type: 'json' };
 import { createClasp } from './clasp.js';
 import { loadConfig } from './config.js';
+import { buildContext, loadSteps, runSteps } from './custom-steps.js';
 import { assertEnvIgnored } from './env.js';
 import { configure } from './steps/configure.js';
 import { deployment } from './steps/deployment.js';
@@ -23,9 +24,11 @@ export async function deploy(cwd, io) {
   assertEnvIgnored(cwd);
   io.log.raw(`${pkg.name} ${pkg.version}`);
   io.log.info(`Project: ${config.title}`);
+  const steps = config.stepsPath ? await loadSteps(config.stepsPath) : [];
 
+  const clasp = createClasp({ cwd });
   /** @type {import('./steps/login.js').StepContext} */
-  const ctx = { cwd, config, clasp: createClasp({ cwd }), io, state: {} };
+  const ctx = { cwd, config, clasp, io, state: {} };
   await login(ctx);
   await project(ctx);
   await configure(ctx);
@@ -34,6 +37,16 @@ export async function deploy(cwd, io) {
 
   const result = ctx.state.deployment;
   if (result) {
+    await runSteps(
+      steps,
+      buildContext({
+        cwd,
+        config,
+        io,
+        result,
+        openScript: () => clasp.openScript(),
+      }),
+    );
     io.log.section('Summary');
     io.log.raw(`Script ID:     ${result.scriptId}`);
     io.log.raw(`Web app URL:   ${result.webappUrl}`);
