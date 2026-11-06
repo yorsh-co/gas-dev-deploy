@@ -1,6 +1,8 @@
 // @ts-check
 import { parseArgs } from 'node:util';
 import pkg from '../package.json' with { type: 'json' };
+import { deploy } from './deploy.js';
+import { createIo } from './io.js';
 import { CancelledError, DeployError } from './errors.js';
 
 const OPTIONS = /** @type {const} */ ({
@@ -11,20 +13,12 @@ const OPTIONS = /** @type {const} */ ({
 const USAGE = `Usage: gas-dev-deploy
 
 Guided setup and deployment of a Google Apps Script web app with clasp.
+Run it from the project root; it needs clasp on PATH and a git-ignored .env.
 
 Options:
   -h, --help  Show this help
   --version   Show the version
 `;
-
-/**
- * Placeholder until the wizard is implemented.
- *
- * @returns {Promise<void>}
- */
-async function deploy() {
-  throw new DeployError('Not implemented.');
-}
 
 /**
  * Runs the CLI.
@@ -62,7 +56,7 @@ export async function main(argv) {
     return 0;
   }
   try {
-    await deploy();
+    await deploy(process.cwd(), createIo());
     return 0;
   } catch (error) {
     if (error instanceof CancelledError) {

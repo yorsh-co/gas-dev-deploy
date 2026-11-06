@@ -3,4 +3,3 @@ node_modules
 .claude/worktrees
 .claude/plans
 .claude/handoff
-scripts/

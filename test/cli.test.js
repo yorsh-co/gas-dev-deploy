@@ -1,5 +1,8 @@
 // @ts-check
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
@@ -37,8 +40,16 @@ describe('gas-dev-deploy CLI', () => {
   });
 
   it('exits 1 with a prefixed message on a known failure', () => {
-    const result = run([]);
-    expect(result.status).toBe(1);
-    expect(result.stderr).toBe('gas-dev-deploy: Not implemented.\n');
+    const cwd = mkdtempSync(join(tmpdir(), 'gas-dev-deploy-cli-'));
+    try {
+      const result = spawnSync(process.execPath, [BIN], {
+        cwd,
+        encoding: 'utf8',
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe('gas-dev-deploy: package.json not found.\n');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 });
