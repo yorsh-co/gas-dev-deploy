@@ -225,6 +225,18 @@ describe('configure', () => {
     );
   });
 
+  it.each(['{not json', '[1]', 'null'])(
+    'rejects an invalid existing manifest (%s)',
+    async (content) => {
+      const root = createProject({
+        files: { 'appsscript.json': content },
+      });
+      const ctx = context(root);
+      ctx.state.scriptId = 's';
+      await expect(configure(ctx)).rejects.toThrow(/appsscript\.json/);
+    },
+  );
+
   it('keeps existing manifest fields not in the template', async () => {
     const root = createProject({
       manifest: { runtimeVersion: 'V8' },
@@ -293,6 +305,12 @@ describe('deployment', () => {
     expect(ctx.state.deployment.version).toBe('1');
   });
 
+  it('aborts when the chosen deployment is not in the list', async () => {
+    const ctx = ready(createProject());
+    prompts.inject(['', false, 'unknown']);
+    await expect(deployment(ctx)).rejects.toThrow('No deployment selected.');
+  });
+
   it('aborts when declined with nothing else to choose', async () => {
     const ctx = ready(createProject(), {
       FAKE_CLASP_DEPLOYMENTS: '[{"deploymentId":"only","versionNumber":1}]',
@@ -307,6 +325,8 @@ describe('deployment', () => {
     });
     prompts.inject(['', true, false]);
     await expect(deployment(ctx)).rejects.toThrow(/No web app deployment/);
-    expect(calls().filter((c) => c === '--json deployments')).toHaveLength(2);
+    expect(calls().filter((c) => c === '--json deployments s-1')).toHaveLength(
+      2,
+    );
   });
 });

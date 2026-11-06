@@ -61,7 +61,7 @@ export async function deployment({ config, clasp, io, state }) {
     message: 'Press Enter once the deployment is created',
   });
 
-  let candidates = versioned(clasp.listDeployments());
+  let candidates = versioned(clasp.listDeployments(scriptId));
   while (candidates.length === 0) {
     const { retry } = await io.prompt({
       type: 'confirm',
@@ -72,7 +72,7 @@ export async function deployment({ config, clasp, io, state }) {
     if (!retry) {
       throw new DeployError('No web app deployment found.');
     }
-    candidates = versioned(clasp.listDeployments());
+    candidates = versioned(clasp.listDeployments(scriptId));
   }
 
   let chosen = /** @type {Deployment & { versionNumber: number }} */ (
@@ -98,9 +98,11 @@ export async function deployment({ config, clasp, io, state }) {
         value: d.deploymentId,
       })),
     });
-    chosen = /** @type {typeof chosen} */ (
-      others.find((d) => d.deploymentId === id)
-    );
+    const selected = others.find((d) => d.deploymentId === id);
+    if (selected === undefined) {
+      throw new DeployError('No deployment selected.');
+    }
+    chosen = selected;
   }
 
   const url = webappUrl(chosen.deploymentId);

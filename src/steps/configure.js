@@ -15,23 +15,27 @@ function writeJson(path, data) {
 }
 
 /**
- * Reads the existing manifest, ignoring a missing or invalid file.
+ * Reads the existing manifest.
  *
  * @param {string} path
- * @returns {Record<string, unknown>}
+ * @returns {Record<string, unknown>} Empty when the file does not exist.
+ * @throws {DeployError} If the file is not a JSON object.
  */
 function readManifest(path) {
   if (!existsSync(path)) {
     return {};
   }
+  /** @type {unknown} */
+  let data;
   try {
-    const data = JSON.parse(readFileSync(path, 'utf8'));
-    return typeof data === 'object' && data !== null && !Array.isArray(data)
-      ? data
-      : {};
+    data = JSON.parse(readFileSync(path, 'utf8'));
   } catch {
-    return {};
+    throw new DeployError(`${path} is not valid JSON.`);
   }
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    throw new DeployError(`${path} must contain a JSON object.`);
+  }
+  return /** @type {Record<string, unknown>} */ (data);
 }
 
 /**
