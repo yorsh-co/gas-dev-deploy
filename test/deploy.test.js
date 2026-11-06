@@ -2,8 +2,12 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
+import prompts from 'prompts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { deploy } from '../src/deploy.js';
+import { createIo } from '../src/io.js';
 import { installFakeClasp, readCalls } from './helpers/fake-clasp.js';
 import { cleanup, createProject } from './helpers/project.js';
 
@@ -107,6 +111,71 @@ describe('deploy', () => {
       'Web app URL:   https://script.google.com/macros/s/AKfy-2/exec',
     );
     expect(result.stdout).toContain('Version:       2');
+  });
+
+  it('runs in process through the exported deploy()', async () => {
+    const cwd = createProject({
+      git: true,
+      gitignore: '.env\n.clasp.json\nappsscript.json\n',
+      clasp: { scriptId: '', rootDir: 'src' },
+    });
+    const overrides = {
+      PATH: `${fake.binDir}:${process.env.PATH}`,
+      FAKE_CLASP_LOG: fake.logPath,
+      FAKE_CLASP_USER: 'dev@example.com',
+      FAKE_CLASP_DEPLOYMENTS: DEPLOYMENTS,
+      FAKE_CLASP_SCRIPT_ID: 'script-9',
+    };
+    const saved = Object.fromEntries(
+      Object.keys(overrides).map((key) => [key, process.env[key]]),
+    );
+    Object.assign(process.env, overrides);
+    const out = new PassThrough();
+    const err = new PassThrough();
+    /** @type {Buffer[]} */
+    const chunks = [];
+    out.on('data', (chunk) => chunks.push(chunk));
+    try {
+      prompts.inject(['keep', 'Etc/UTC', '', true]);
+      await deploy(
+        cwd,
+        createIo({
+          stdout: /** @type {any} */ (out),
+          stderr: /** @type {any} */ (err),
+        }),
+      );
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
+
+    const commands = readCalls(fake.logPath).map((c) =>
+      c.args[0] === '--json' ? c.args[1] : c.args[0],
+    );
+    expect(commands).toEqual([
+      'show-authorized-user',
+      'create',
+      'push',
+      'open-script',
+      'deployments',
+    ]);
+    expect(JSON.parse(readFileSync(join(cwd, '.clasp.json'), 'utf8'))).toEqual({
+      scriptId: 'script-9',
+      rootDir: 'src',
+    });
+    expect(readFileSync(join(cwd, '.env'), 'utf8')).toContain(
+      'GAS_DEPLOYMENT_ID=AKfy-2\n',
+    );
+    const stdout = Buffer.concat(chunks).toString('utf8');
+    expect(stdout).toContain('Script ID:     script-9');
+    expect(stdout).toContain(
+      'Web app URL:   https://script.google.com/macros/s/AKfy-2/exec',
+    );
   });
 
   it('exits 1 without running clasp when .env is not ignored', () => {
