@@ -3,10 +3,12 @@
 // Stand-in for clasp. Logs every call to $FAKE_CLASP_LOG; env vars pick the outcome:
 // FAKE_CLASP_USER (email, empty = logged out), FAKE_CLASP_SCRIPT_ID, FAKE_CLASP_DEPLOYMENTS (JSON),
 // FAKE_CLASP_FAIL (command name that exits 1), FAKE_CLASP_OUTPUT (raw stdout for the
-// show-authorized-user and create commands).
+// show-authorized-user and create commands), FAKE_CLASP_LOGIN_USER (email that `login` signs in:
+// later show-authorized-user calls report it, tracked in a state file next to the log).
 import {
   appendFileSync,
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -87,7 +89,10 @@ function main() {
   ) {
     process.stdout.write(`${env.FAKE_CLASP_OUTPUT}\n`);
   } else if (command === 'show-authorized-user') {
-    const email = env.FAKE_CLASP_USER ?? '';
+    const loggedInFile = `${env.FAKE_CLASP_LOG}.login`;
+    const email = existsSync(loggedInFile)
+      ? readFileSync(loggedInFile, 'utf8')
+      : (env.FAKE_CLASP_USER ?? '');
     json(email ? { loggedIn: true, email } : { loggedIn: false });
   } else if (command === 'create') {
     const rootDir = /** @type {string} */ (
@@ -110,6 +115,9 @@ function main() {
     command === 'login' ||
     command === 'open-script'
   ) {
+    if (command === 'login' && env.FAKE_CLASP_LOGIN_USER) {
+      writeFileSync(`${env.FAKE_CLASP_LOG}.login`, env.FAKE_CLASP_LOGIN_USER);
+    }
     process.stdout.write(`${command} ok\n`);
   } else {
     process.stderr.write(`unexpected clasp call: ${args.join(' ')}\n`);
