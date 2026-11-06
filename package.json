@@ -1,0 +1,64 @@
+{
+  "name": "gas-dev-deploy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Setup and deployment wizard for Google Apps Script web apps: clasp login, project, manifest, push and guided deployment.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yorsh-co/gas-dev-deploy.git"
+  },
+  "author": "Joshua Porter",
+  "license": "MIT",
+  "yorsh": {
+    "organization": "Yorsh",
+    "homepage": "https://yorsh.co"
+  },
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
+  },
+  "type": "module",
+  "bin": {
+    "gas-dev-deploy": "bin/gas-dev-deploy.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "types.d.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types.d.ts",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "prettier": "gas-dev-config/prettier",
+  "overrides": {
+    "minimatch": "^11.0.1"
+  },
+  "gasDevConfig": {
+    "preset": "node"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "eslint": "^10.14.0",
+    "gas-dev-config": "github:yorsh-co/gas-dev-config#semver:^2.0.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@types/prompts": "^2.4.9",
+    "prompts": "^2.4.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit && echo '✓ TypeScript passed'",
+    "lint": "eslint . && echo '✓ Lint passed'",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && gas-dev-config check",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  }
+}
