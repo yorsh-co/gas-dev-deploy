@@ -2,6 +2,9 @@
 
 ## Setup and deployment wizard for Google Apps Script web apps: clasp login, project, manifest, push and guided deployment.
 
+> [!CAUTION]
+> Deprecated: folded into [gas-dev-ci](https://github.com/yorsh-co/gas-dev-ci) as `gas-dev-ci setup`. See [Migrating from gas-dev-deploy](https://github.com/yorsh-co/gas-dev-ci#migrating-from-gas-dev-deploy). This repository is archived.
+
 > [!NOTE]
 > `gas-dev-deploy` is development tooling. It is installed as a dev dependency and is never pushed to Apps Script.
 
