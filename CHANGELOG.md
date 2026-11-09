@@ -6,7 +6,7 @@
 
 ### Deprecated
 
-- `gas-dev-deploy` is folded into [gas-dev-ci](https://github.com/yorsh-co/gas-dev-ci) as `gas-dev-ci setup`; the repository is to be archived and receives no further releases
+- `gas-dev-deploy` is folded into [gasdev](https://github.com/yorsh-co/gasdev) as `gasdev setup`; the repository is archived and receives no further releases
 
 ---
 
